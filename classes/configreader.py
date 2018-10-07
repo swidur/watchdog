@@ -19,9 +19,12 @@ class ConfigReader:
         self.recipient_address = ''
         self.time_delay = None
         self.restart_after = None
+        self.start_attempts = None
+
 
         self.def_time_delay = 5
         self.def_restart_after = 3
+        self.def_start_attempts = 5
 
         self.read_services()
         self.read_email()
@@ -41,6 +44,14 @@ class ConfigReader:
                     except ValueError:
                         log.warning('timeDelay value provided in config is not valid ({}), setting to default: {}'.format(self.time_delay, self.def_time_delay))
                         self.time_delay = self.def_time_delay
+
+                elif line.split('=')[0].strip(' ') == 'startAttempts':
+                    self.start_attempts = line.split('=')[1].strip('\n').strip(' ')
+                    try:
+                        self.start_attempts = int(self.start_attempts)
+                    except ValueError:
+                        log.warning('startAttempts value provided in config is not valid ({}), setting to default: {}'.format(self.start_attempts, self.start_attempts))
+                        self.start_attempts = self.def_start_attempts
 
                 elif line.split('=')[0].strip(' ') == 'restartAfterIterations':
                     self.restart_after = line.split('=')[1].strip('\n').strip(' ')

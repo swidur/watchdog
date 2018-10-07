@@ -6,7 +6,8 @@ class ConfigCreator:
 
         self.main_config_body = 'servicesList=\n' \
                            'timeDelay=\n' \
-                           'restartAfterIterations=\n'
+                           'restartAfterIterations=\n' \
+                            'startAttempts=\n'
         self.email_config_body =  'senderAddress=sender@address.com\n' \
                            'senderPassword=somepassword\n' \
                            'recipientAddress=fake@mail.com'

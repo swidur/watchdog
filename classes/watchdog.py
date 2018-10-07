@@ -74,4 +74,5 @@ class WatchDog:
 
 
     def kill_isoz_sess(self):
+        log.info('Kill bat fired.')
         subprocess.run(['..\\kill.bat'])

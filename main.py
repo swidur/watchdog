@@ -18,33 +18,37 @@ class Main:
 
     def __init__(self):
         self.config = ConfigReader()
-        self.listOfservices = self.config.services_list
-        self.watchdog = WatchDog(self.listOfservices)
+        self.services_list = self.config.services_list
+        self.watchdog = WatchDog(self.services_list)
 
-        self.startAttemptsMax = 3
-        self.resetAfter = self.config.restart_after
-        self.startWait = 0.1
-        self.stopWait = 0.1
-        self.forceStopWait = 0.1
-        self.timeDelay = self.config.time_delay
+        self.reset_after = self.config.restart_after
+        self.start_wait = 0.1
+        self.stop_wait = 0.1
+        self.force_stop_wait = 0.1
+        self.time_delay = self.config.time_delay
+        self.start_max_attempts = self.config.start_attempts
 
-        self.startAttemptsCount = 0
-        log.info('GUARDING {} SERVICE/S: {}'.format(len(self.listOfservices),self.listOfservices))
+        self.start_attempt_counter = 0
+        log.info('GUARDING {} SERVICE/S: {}'.format(len(self.services_list), self.services_list))
 
 
     def start_duty(self):
         counter = 0
-        while True:
-            if counter < self.resetAfter:
-                self.guard_list()
-                counter += 1
-                self.wait(self.timeDelay)
+        if self.reset_after:
+            while True:
+                if counter < self.reset_after:
+                    self.guard_list()
+                    counter += 1
+                    self.wait(self.time_delay)
 
-            elif counter >= self.resetAfter:
-                self.guard_list(restart=True)
-                counter = 0
-                self.wait(self.timeDelay)
-
+                elif counter >= self.reset_after:
+                    self.guard_list(restart=True)
+                    counter = 0
+                    self.wait(self.time_delay)
+        elif not self.reset_after:
+            while True:
+                    self.guard_list()
+                    self.wait(self.time_delay)
 
     def guard(self, service, restart=False):
         status = self.watchdog.check_status(service)
@@ -67,25 +71,28 @@ class Main:
 
 
     def status_stopped(self, srvc):
-        if self.startAttemptsCount < self.startAttemptsMax:
-            log.debug("Attempting to start {} from STOPPED..".format(srvc.name()))
+        if self.start_attempt_counter < self.start_max_attempts:
+            self.start_attempt_counter += 1
+            log.debug("Attempting to start {} from STOPPED.. {}".format(srvc.name(), self.start_attempt_counter))
             self.watchdog.start_service(srvc)
-            self.wait(self.startWait)
-            self.startAttemptsCount += 1
+            self.wait(self.start_wait)
             currentStatus = self.watchdog.check_status(srvc)
 
-            if currentStatus not in self.watchdog.running:
-                log.error("{} did not start as exptected on attempt {}.".format(srvc.name(), self.startAttemptsCount))
+            if currentStatus in self.watchdog.hanged:
+                log.error("{} did not start as expected on attempt {}.".format(srvc.name(), self.start_attempt_counter))
                 self.status_hanged(srvc)
             elif currentStatus in self.watchdog.running:
-                log.info("{} did start as exptected on attempt {}.".format(srvc.name(), self.startAttemptsCount))
-                self.startAttemptsCount = 0
+                log.info("{} DID start as expected on attempt {}.".format(srvc.name(), self.start_attempt_counter))
+                self.start_attempt_counter = 0
+            elif currentStatus in self.watchdog.stopped:
+                log.error("{} did not start as expected on attempt {}.".format(srvc.name(), self.start_attempt_counter))
+                self.status_stopped(srvc)
         else:
             subject = 'Service cannot be started'
-            msg = 'Service: {} could not be started from {} after {} attempts. Do something, will you?'.format(srvc.name(), srvc.status(), self.startAttemptsCount)
+            msg = 'Service: {} could not be started from {} after {} attempts. Do something about that, will you?'.format(srvc.name(), srvc.status(), self.start_attempt_counter)
             mail = SendMail(self.config.recipient_address, subject, msg, subject, ['config.cfg', 'logs.txt'])
             mail.send_mail()
-            self.startAttemptsCount = 0
+            self.start_attempt_counter = 0
 
 
 
@@ -94,22 +101,24 @@ class Main:
         if srvc.name == 'KSPLIsozService':
             self.watchdog.kill_isoz_sess()
         self.watchdog.force_stop_service(srvc)
-        self.wait(self.forceStopWait)
+        self.wait(self.force_stop_wait)
         self.guard(srvc)
 
     def status_paused(self,srvc):
         log.debug("Attempting to resume {} from PAUSED..".format(srvc.name()))
         self.watchdog.resume_service(srvc)
-        self.wait(self.startWait)
+        self.wait(self.start_wait)
         if self.watchdog.check_status(srvc) not in self.watchdog.running:
             log.error("{} did not resume".format(srvc.name()))
             self.status_hanged(srvc)
 
     def status_running(self,srvc):
         log.debug("Attempting to restart {} on TIMER..".format(srvc.name()))
-        self.watchdog.stop_service(srvc)
-        self.wait(self.stopWait)
-        self.guard(srvc)
+        if srvc.status() in self.watchdog.running:
+            self.watchdog.stop_service(srvc)
+            self.wait(self.stop_wait)
+            self.guard(srvc)
+
 
     def wait(self,waitTime):
         log.debug("Waiting for {} minutes".format(waitTime))

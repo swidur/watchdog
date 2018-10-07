@@ -2,7 +2,7 @@ import psutil
 import subprocess
 import logging as log
 from sys import exit
-
+from os import getcwd
 
 
 class WatchDog:
@@ -25,7 +25,7 @@ class WatchDog:
             subprocess.run(['openfiles'], check=True, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
         except subprocess.CalledProcessError:
-            log.critical('THIS PROGRAM MUST BE RUN WITH ELEVATED PRIVILEGES!')
+            log.critical('THIS PROGRAM MUST BE RUN WITH ELEVATED PRIVILEGES! EXITING..')
             exit()
 
     def check_status(self,srvc):
@@ -53,7 +53,8 @@ class WatchDog:
                            stderr=subprocess.PIPE)
         except subprocess.TimeoutExpired:
             log.warning('Attempt to start {} timedout.'.format(srvc.name()))
-
+        except Exception:
+            log.critical('Unhandled exception occured! {}'.format(srvc.name()))
 
     def stop_service(self,srvc):
         subprocess.run(['sc', 'stop', '{}'.format(srvc.name())], check=True, stdout=subprocess.PIPE,
@@ -68,7 +69,9 @@ class WatchDog:
 
 
     def resume_service(self,srvc):
-
         subprocess.run(['sc', 'continue', '{}'.format(srvc.name())], check=True, stdout=subprocess.PIPE,
                        stderr=subprocess.PIPE)
 
+
+    def kill_isoz_sess(self):
+        subprocess.run(['..\\kill.bat'])

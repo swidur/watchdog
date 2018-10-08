@@ -1,0 +1,3 @@
+1. Add proper exception handling to watchdog commands
+2. Remove hardcoded KSPLIsozService mentions
+3. many more..

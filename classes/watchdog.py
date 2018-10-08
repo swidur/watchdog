@@ -49,6 +49,7 @@ class WatchDog:
     def start_service(self,srvc):
 
         try:
+            log.debug('# start_service fired.')
             subprocess.run(['sc', 'start', '{}'.format(srvc.name())], timeout=5, check=True, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
         except subprocess.TimeoutExpired:
@@ -57,22 +58,38 @@ class WatchDog:
             log.critical('Unhandled exception occured! {}'.format(srvc.name()))
 
     def stop_service(self,srvc):
-        subprocess.run(['sc', 'stop', '{}'.format(srvc.name())], check=True, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
+        try:
+            log.debug('# stop_service fired.')
+
+            subprocess.run(['sc', 'stop', '{}'.format(srvc.name())], check=True, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+        except Exception:
+            log.critical('Unhandled exception occured in stop_service! {}. Psst! There are no handled exceptions..'.format(srvc.name()))
 
 
     def force_stop_service(self, srvc):
-        exe = srvc.binpath().split('/')[0].split('\\')[-1].strip(' ')
-        subprocess.run(['taskkill', '/f', '/pid', '{}'.format(exe)], check=True, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
+        try:
+            log.debug('# force_stop_service fired.')
+            subprocess.run(['taskkill', '/f', '/pid', '{}'.format(srvc.pid())], check=True, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+        except Exception:
+            log.critical('Unhandled exception occured in force_stop_service! {}. Psst! There are no handled exceptions..'.format(srvc.name()))
 
 
 
     def resume_service(self,srvc):
-        subprocess.run(['sc', 'continue', '{}'.format(srvc.name())], check=True, stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
+        try:
+            log.debug('# resume_service fired.')
+            subprocess.run(['sc', 'continue', '{}'.format(srvc.name())], check=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+        except Exception:
+            log.critical('Unhandled exception occured in resume_service! {}. Psst! There are no handled exceptions..'.format(srvc.name()))
+
 
 
     def kill_isoz_sess(self):
         log.info('Kill bat fired.')
-        subprocess.run(['..\\kill.bat'])
+        try:
+            subprocess.run(['..\\kill.bat'])
+        except FileNotFoundError:
+            log.exception('kill_isoz_sessions FILE NOT FOUND')

@@ -22,14 +22,19 @@ class Main:
         self.watchdog = WatchDog(self.services_list)
 
         self.reset_after = self.config.restart_after
+        self.time_delay = self.config.time_delay
+        self.hard_restart = self.config.hard_restart
+
         self.start_wait = 0.1
         self.stop_wait = 0.1
         self.force_stop_wait = 0.1
-        self.time_delay = self.config.time_delay
         self.start_max_attempts = self.config.start_attempts
 
+
+
         self.start_attempt_counter = 0
-        log.info('GUARDING {} SERVICE/S: {}'.format(len(self.services_list), self.services_list))
+        log.info('GUARDING {} SERVICE/S: {} || {} service/s on hard restart: {}'.format(
+            len(self.services_list), self.services_list,len(self.hard_restart), self.hard_restart))
 
 
     def start_duty(self):
@@ -115,14 +120,19 @@ class Main:
     def status_running(self,srvc):
         log.debug("Attempting to restart {} on TIMER..".format(srvc.name()))
         if srvc.status() in self.watchdog.running:
-            self.watchdog.stop_service(srvc)
+            if srvc.name() in self.hard_restart:
+                self.watchdog.force_stop_service(srvc)
+                if srvc.name() is 'KSPLIsozService': #yeah, I know.
+                    self.watchdog.kill_isoz_sess()
+            else:
+                self.watchdog.stop_service(srvc)
+
             self.wait(self.stop_wait)
             self.guard(srvc)
 
 
     def wait(self,waitTime):
         log.debug("Waiting for {} minutes".format(waitTime))
-
         sleep(waitTime*60)
 
 

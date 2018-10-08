@@ -4,10 +4,17 @@ import logging as log
 class ConfigCreator:
     def __init__(self):
 
-        self.main_config_body = 'servicesList=\n' \
-                           'timeDelay=\n' \
-                           'restartAfterIterations=\n' \
-                            'startAttempts=\n'
+        self.main_config_body = '#serviceList= comma separated list of services to guard\n' \
+                                '#hardRestart= comma separated list of services that need to be FORCED shut instead of ending gracefully\n' \
+                                '#timeDelay= time [minutes] between checking up on service\n' \
+                                '#restartAfterIterations= number of iterations before restarting service anyway (for those that just pretend to be working)\n' \
+                                '#startAttempts= number of attempts on starting service before sending email\n' \
+                                '#\n' \
+                                'servicesList=\n' \
+                                'hardRestart=\n' \
+                                'timeDelay=\n' \
+                                'restartAfterIterations=\n' \
+                                'startAttempts=\n'
         self.email_config_body =  'senderAddress=sender@address.com\n' \
                            'senderPassword=somepassword\n' \
                            'recipientAddress=fake@mail.com'

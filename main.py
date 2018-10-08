@@ -107,7 +107,11 @@ class Main:
 
     def status_running(self,srvc):
         log.debug("Attempting to restart {} on TIMER..".format(srvc.name()))
-        self.watchdog.stop_service(srvc)
+        if srvc.name() == 'KSPLIsozService':
+            self.watchdog.force_stop_service(srvc)
+            self.watchdog.kill_isoz_sess()
+        else:
+            self.watchdog.stop_service(srvc)
         self.wait(self.stopWait)
         self.guard(srvc)
 

@@ -57,8 +57,11 @@ class WatchDog:
             log.critical('Unhandled exception occured! {}'.format(srvc.name()))
 
     def stop_service(self,srvc):
-        subprocess.run(['sc', 'stop', '{}'.format(srvc.name())], check=True, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
+        try:
+            subprocess.run(['sc', 'stop', '{}'.format(srvc.name())], check=True, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+        except Exception:
+            log.exception('Caught some exception while trying to stop service.')
 
 
     def force_stop_service(self, srvc):

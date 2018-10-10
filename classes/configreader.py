@@ -8,12 +8,14 @@ from classes.configcreator import ConfigCreator
 
 class ConfigReader:
     def __init__(self):
-        ConfigCreator()
+        self.config_files = ConfigCreator()
+        self.config_files.create()
 
         self.location = "config.cfg"
         self.emailLocation = "email.cfg"
 
-        self.services_to_val = []
+        self.watch_services_to_val = []
+        self.restart_services_to_val = []
         self.hard_rest_to_val = []
         self.sender_address = ''
         self.sender_plain_pw = ''
@@ -31,15 +33,19 @@ class ConfigReader:
         self.read_services()
         self.read_email()
 
-        self.services_list = self.validate_services(self.services_to_val,True)
+        self.watch_services = self.validate_services(self.watch_services_to_val)
+        self.restart_services = self.validate_services(self.restart_services_to_val)
         self.hard_restart = self.validate_services(self.hard_rest_to_val)
-
+        self.mail_exit_if_no_services()
 
     def read_services(self):
         with open(self.location,'r') as file:
             for line in file:
-                if line.split('=')[0].strip(' ') == 'servicesList':
-                    self.services_to_val = line.split('=')[1].strip('\n').strip(' ').split(',')
+                if line.split('=')[0].strip(' ') == 'watchServices':
+                    self.watch_services_to_val = line.split('=')[1].strip('\n').strip(' ').split(',')
+
+                elif line.split('=')[0].strip(' ') == 'restartServices':
+                    self.restart_services_to_val = line.split('=')[1].strip('\n').strip(' ').split(',')
 
                 elif line.split('=')[0].strip(' ') == 'hardRestart':
                     self.hard_rest_to_val = line.split('=')[1].strip('\n').strip(' ').split(',')
@@ -68,29 +74,27 @@ class ConfigReader:
                         log.warning('restartAfter value provided in config is not valid ({}), setting to default: {}'.format(self.restart_after, self.def_restart_after))
                         self.restart_after = self.def_restart_after
 
-    def validate_services(self, to_validate, exit_if_empty=False):
+    def validate_services(self, to_validate):
         after_validation = []
         for potential in to_validate:
-            try:
-                psutil.win_service_get(potential)
-                after_validation.append(potential)
-            except psutil._exceptions.NoSuchProcess:
-                log.warning('While validating: {}: No such service found: {}, check your spelling in config.'.format(to_validate,potential))
+            if potential != '':
+                try:
+                    psutil.win_service_get(potential)
+                    after_validation.append(potential)
+                except psutil._exceptions.NoSuchProcess:
+                    log.warning('While validating: {}: No such service found: {}, check your spelling in config.'.format(to_validate,potential))
 
-        if len(after_validation) == 0 and exit_if_empty:
-            msg = 'List of validated services is empty. I can''t work under these conditions.\n' \
-                  'Here is list of services from config: {}'. format(self.services_to_val)
+        return after_validation
+
+    def mail_exit_if_no_services(self):
+        if (len(self.watch_services)+len(self.restart_services)) == 0:
+            msg = 'No valid services. I can''t work like this.\n' \
+                  'Here is list of services from config: {}, and {}'. format(self.watch_services_to_val,self.restart_services_to_val)
             subject = 'No valid services to guard!'
             log.critical(msg)
             mail = SendMail(self.recipient_address, subject, msg, subject, ['config.cfg', 'logs.txt'])
             mail.send_mail()
             exit()
-
-        elif len(after_validation) == 0 and not exit_if_empty:
-            log.info('No valid services on list {}. Continuing.'.format(to_validate))
-
-        return after_validation
-
 
     def read_email(self):
         with open(self.emailLocation,'r') as file:

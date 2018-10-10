@@ -6,12 +6,8 @@ from os import getcwd
 
 
 class WatchDog:
-    def __init__(self, lst_of_srvcs):
+    def __init__(self):
         self.check_admin()
-        if type(lst_of_srvcs) is list:
-            self.lst_of_srvcs = [psutil.win_service_get(x) for x in lst_of_srvcs]
-        elif type(lst_of_srvcs) is str:
-            self.lst_of_srvcs = [].append(lst_of_srvcs)
 
         self.hanged = ['start_pending', 'pause_pending', 'continue_pending', 'stop_pending']
         self.paused = ['paused']

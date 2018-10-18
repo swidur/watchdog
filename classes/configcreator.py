@@ -4,8 +4,8 @@ import logging as log
 class ConfigCreator:
     def __init__(self):
 
-        self.main_config_body = '#serviceList= comma separated list of services to guard\n' \
-                                '#hardRestart= comma separated list of services that need to be FORCED shut instead of ending gracefully\n' \
+        self.main_config_body = '#watchServices= comma separated list of services to guard\n' \
+                                '#restartServices= comma separated list of services that need to be FORCED shut instead of ending gracefully\n' \
                                 '#timeDelay= time [minutes] between checking up on service\n' \
                                 '#restartAfterIterations= number of iterations before restarting service anyway (for those that just pretend to be working)\n' \
                                 '#startAttempts= number of attempts on starting service before sending email\n' \
@@ -26,7 +26,7 @@ class ConfigCreator:
                         "ALTER TRIGGER GABINET.T_KSPL$SESSIONS_KILLED ENABLE;\n" \
                         "exit;"
 
-        self.bat_body = 'sqlplus "/as sysdba" @..\killsessions.sql'
+        self.bat_body = 'sqlplus "/as sysdba" @killsessions.sql > kill_log.txt'
 
 
         self.configs = [('email.cfg',self.email_config_body),('config.cfg',self.main_config_body),

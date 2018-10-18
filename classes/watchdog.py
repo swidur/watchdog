@@ -3,6 +3,7 @@ import subprocess
 import logging as log
 from sys import exit
 from os import getcwd
+import ctypes, os
 
 
 class WatchDog:
@@ -14,15 +15,14 @@ class WatchDog:
         self.stopped = ['stopped']
         self.running = ['running']
 
-        self.subExcepMsg = 'This needs to be run as an ADMIN. Or some other error occured, I dont know.'
 
     def check_admin(self):
-        try:
-            subprocess.run(['openfiles'], check=True, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
-        except subprocess.CalledProcessError:
+        if ctypes.windll.shell32.IsUserAnAdmin() == 0:
             log.critical('THIS PROGRAM MUST BE RUN WITH ELEVATED PRIVILEGES! EXITING..')
             exit()
+        else:
+            log.info("Program running in elevated mode, as it should.")
+
 
     def check_status(self,srvc):
         status = srvc.status()
@@ -86,6 +86,6 @@ class WatchDog:
     def kill_isoz_sess(self):
         log.info('Kill bat fired.')
         try:
-            subprocess.run(['..\\kill.bat'])
+            subprocess.run(['kill.bat'])
         except FileNotFoundError:
             log.exception('kill_isoz_sessions FILE NOT FOUND')

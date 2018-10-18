@@ -6,7 +6,7 @@ from classes.watchdog import WatchDog
 import psutil
 
 
-log.basicConfig( format='%(asctime)s %(levelname)s: %(message)s',
+log.basicConfig(filename='logs.txt', format='%(asctime)s %(levelname)s: %(message)s',
                     datefmt='/ %d-%m-%Y %H:%M:%S /', level='DEBUG')
 
 
@@ -17,11 +17,11 @@ class Main:
     # log.info('################################################################')
 
     def __init__(self):
+        self.watchdog = WatchDog()
         self.config = ConfigReader()
         self.watch_services = self.config.watch_services
         self.restart_services = self.config.restart_services
         self.combined_services = [psutil.win_service_get(x) for x in set(self.watch_services + self.restart_services)]
-        self.watchdog = WatchDog()
         self.hard_restart = self.config.hard_restart
 
         self.restart_after = self.config.restart_after
@@ -128,7 +128,7 @@ class Main:
         if srvc.status() in self.watchdog.running:
             if srvc.name() in self.hard_restart:
                 self.watchdog.force_stop_service(srvc)
-                if srvc.name() is 'KSPLIsozService': #yeah, I know.
+                if srvc.name() == 'KSPLIsozService': #yeah, I know.
                     self.watchdog.kill_isoz_sess()
             else:
                 self.watchdog.stop_service(srvc)
